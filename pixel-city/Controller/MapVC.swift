@@ -11,6 +11,8 @@
 //Need to go into pods file/build settings, then switch version to 3.2
 
 
+//ADD TO GIT!!!!!!!
+
 
 import UIKit
 import Alamofire
@@ -19,7 +21,7 @@ import CoreLocation
 
 
 
-class MapVC: UIViewController {
+class MapVC: UIViewController, UIGestureRecognizerDelegate {
     
     //Outlets
     @IBOutlet weak var mapView: MKMapView!
@@ -37,7 +39,21 @@ class MapVC: UIViewController {
         locationManager.delegate = self
         //need to go to info.plist + button and add "privacy - location always..." and "privacy -  when in use..." and "NSLocationAlwaysandWhenInUseUsaageDescription" and add descriptions of how app is using location 
         configureLocationServices()
+        addDoubleTap()
     }
+    
+    func addDoubleTap() {
+        let doubleTap = UITapGestureRecognizer(target: self, action: #selector(dropPin(sender:)))
+        //UITapGestureRecognizer function will be located in MKMapViewDelegate
+        
+        doubleTap.numberOfTapsRequired = 2
+        
+        //Need to conform uitapgesturerecognizer delegate. Need to inherit
+        doubleTap.delegate = self
+        mapView.addGestureRecognizer(doubleTap)
+        
+    }
+    
 
     @IBAction func centerMapButtonWasPressed(_ sender: Any) {
         if authorizationStatus == .authorizedAlways || authorizationStatus == .authorizedWhenInUse {
@@ -56,6 +72,36 @@ extension MapVC: MKMapViewDelegate {
         //its one way so need to multiply to get both ways
         let coordinateRegion = MKCoordinateRegionMakeWithDistance(coordinate, regionRadius * 2.0, regionRadius * 2.0)
         mapView.setRegion(coordinateRegion, animated: true)
+    }
+    
+    @objc func dropPin(sender: UITapGestureRecognizer) {
+        removePin()
+        
+        //print("doubleTap is working")
+        
+        //going to create a touchpoint which shows on the map where user touched the exact coordinates ON THE SCREEN (not geolocation) of that spot
+         let touchPoint = sender.location(in: mapView)
+        
+        //print(touchPoint)
+        
+        //this takes the CGPoint and converts it into a geolocation coordinate
+        let touchCoordinate = mapView.convert(touchPoint, toCoordinateFrom: mapView)
+        
+        //Want to pass coordinates into a pin on the map (need a class of MK annotation)
+        let annotation = DroppablePin(coordinate: touchCoordinate, identifier: "droppablePin")
+        
+        mapView.addAnnotation(annotation)
+        
+        let coordinateRegion = MKCoordinateRegionMakeWithDistance(touchCoordinate, regionRadius * 2.0, regionRadius * 2.0)
+        
+        mapView.setRegion(coordinateRegion, animated: true)
+    }
+    
+    //func to remove pins not being used
+    func removePin() {
+        for annotation in mapView.annotations {
+            mapView.removeAnnotation(annotation)
+        }
     }
     
     
