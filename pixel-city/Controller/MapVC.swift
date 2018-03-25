@@ -1,4 +1,10 @@
-//
+//https://www.flickr.com/services/developer/api/
+//go to non commercial services
+//get an API KEY
+//https://www.flickr.com/services/api/explore/flickr.photos.search
+//allows you to pass in a lat a long and radius and it will return photos from there
+//take UR from bottom (allow 40 per page)
+
 //  MapVC.swift
 //  pixel-city
 //
@@ -192,6 +198,9 @@ extension MapVC: MKMapViewDelegate {
         let annotation = DroppablePin(coordinate: touchCoordinate, identifier: "droppablePin")
         
         mapView.addAnnotation(annotation)
+        
+       // print(flickrURL(forApiKey: apiKey, withAnnotation: annotation, andNumberOfPhotos: 40))
+
         
         let coordinateRegion = MKCoordinateRegionMakeWithDistance(touchCoordinate, regionRadius * 2.0, regionRadius * 2.0)
         
