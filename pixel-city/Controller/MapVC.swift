@@ -10,10 +10,6 @@
 //Need to install alamofire and alamofireimage from github
 //Need to go into pods file/build settings, then switch version to 3.2
 
-
-//ADD TO GIT!!!!!!!
-
-
 import UIKit
 import Alamofire
 import MapKit
@@ -25,9 +21,15 @@ class MapVC: UIViewController, UIGestureRecognizerDelegate {
     
     //Outlets
     @IBOutlet weak var mapView: MKMapView!
+    @IBOutlet weak var pullUpView: UIView!
+    @IBOutlet weak var pullUpViewHeightConstraint: NSLayoutConstraint!
+    
     
     //Variables
     var locationManager = CLLocationManager()
+    var spinner:UIActivityIndicatorView?
+    var progressLbl: UILabel?
+    var screenSize = UIScreen.main.bounds
     
     //Constants
     let authorizationStatus = CLLocationManager.authorizationStatus()
@@ -51,9 +53,43 @@ class MapVC: UIViewController, UIGestureRecognizerDelegate {
         //Need to conform uitapgesturerecognizer delegate. Need to inherit
         doubleTap.delegate = self
         mapView.addGestureRecognizer(doubleTap)
-        
     }
     
+    //swipe the mapview down to hide the table
+    func addSwipe() {
+        let swipe = UISwipeGestureRecognizer(target: self, action: #selector(animateViewDown))
+        swipe.direction = .down
+        pullUpView.addGestureRecognizer(swipe)
+    }
+    
+    func animateViewUp() {
+        //modifying the constraint to make it move up
+        pullUpViewHeightConstraint.constant = 300
+   
+        UIView.animate(withDuration: 0.3) {
+            //part of the view. lays out subviews immediately. redraw and show whats changed
+            self.view.layoutIfNeeded()
+        }
+    }
+    
+    //action for UISwipeGestureRecognizer in func animateViewUp()
+    @objc func animateViewDown() {
+        pullUpViewHeightConstraint.constant = 0
+        
+        UIView.animate(withDuration: 0.3) {
+            //part of the view. lays out subviews immediately. redraw and show whats changed
+            self.view.layoutIfNeeded()
+        }
+    }
+    
+    func addSpinner() {
+        spinner = UIActivityIndicatorView()
+        spinner?.center = CGPoint(x: (screenSize.width / 2) - ((spinner?.frame.width)! / 2), y: 150)
+        spinner?.activityIndicatorViewStyle = .whiteLarge
+        spinner?.color = #colorLiteral(red: 0.2549019754, green: 0.2745098174, blue: 0.3019607961, alpha: 1)
+        spinner?.startAnimating()
+        pullUpView.addSubview(spinner!)
+    }
 
     @IBAction func centerMapButtonWasPressed(_ sender: Any) {
         if authorizationStatus == .authorizedAlways || authorizationStatus == .authorizedWhenInUse {
@@ -64,6 +100,18 @@ class MapVC: UIViewController, UIGestureRecognizerDelegate {
 
 //Need to conform to MapViewDelegate
 extension MapVC: MKMapViewDelegate {
+    //changing color of pin to match project theme
+    func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+        //Prevents automatic pin drop of current location
+        if annotation is MKUserLocation {
+            return nil
+        }
+        
+        let pinAnnotation = MKPinAnnotationView(annotation: annotation, reuseIdentifier: "droppblePin")
+        pinAnnotation.pinTintColor = UIColor.orange
+        pinAnnotation.animatesDrop = true
+        return pinAnnotation
+    }
     
     //This function zooms the map into the location of the user for a better view
     func centerMapOnUserLocation() {
@@ -76,6 +124,12 @@ extension MapVC: MKMapViewDelegate {
     
     @objc func dropPin(sender: UITapGestureRecognizer) {
         removePin()
+        
+        animateViewUp()
+        //adds the ability to swipe once there is a pin dropped
+        addSwipe()
+        
+        addSpinner()
         
         //print("doubleTap is working")
         
