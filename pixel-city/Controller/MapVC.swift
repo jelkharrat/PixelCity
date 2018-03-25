@@ -31,6 +31,10 @@ class MapVC: UIViewController, UIGestureRecognizerDelegate {
     var progressLbl: UILabel?
     var screenSize = UIScreen.main.bounds
     
+    //when instantiating a collection view programmatically, you need a glow layout
+    var flowLayout = UICollectionViewFlowLayout()
+    var collectionView: UICollectionView?
+    
     //Constants
     let authorizationStatus = CLLocationManager.authorizationStatus()
     let regionRadius: Double = 1000 //meters
@@ -42,6 +46,21 @@ class MapVC: UIViewController, UIGestureRecognizerDelegate {
         //need to go to info.plist + button and add "privacy - location always..." and "privacy -  when in use..." and "NSLocationAlwaysandWhenInUseUsaageDescription" and add descriptions of how app is using location 
         configureLocationServices()
         addDoubleTap()
+        
+        //instantiate collection view
+        collectionView = UICollectionView(frame: view.bounds, collectionViewLayout: flowLayout)
+        
+        //registering a cell to use. Need a cell class. Create one in the View Folder
+        collectionView?.register(PhotoCell.self, forCellWithReuseIdentifier: "photoCell")
+        
+        //creating another extension for these at the bottom
+        collectionView?.delegate = self
+        collectionView?.dataSource = self
+        
+        //checks if it actually comes up
+        collectionView?.backgroundColor = #colorLiteral(red: 0.1960784346, green: 0.3411764801, blue: 0.1019607857, alpha: 1)
+        
+        pullUpView.addSubview(collectionView!)
     }
     
     func addDoubleTap() {
@@ -88,7 +107,30 @@ class MapVC: UIViewController, UIGestureRecognizerDelegate {
         spinner?.activityIndicatorViewStyle = .whiteLarge
         spinner?.color = #colorLiteral(red: 0.2549019754, green: 0.2745098174, blue: 0.3019607961, alpha: 1)
         spinner?.startAnimating()
-        pullUpView.addSubview(spinner!)
+        collectionView?.addSubview(spinner!)
+    }
+    
+    func removeSpinner() {
+        if spinner != nil{
+            spinner?.removeFromSuperview()
+        }
+    }
+    
+    func addProgressLbl() {
+        progressLbl = UILabel()
+        progressLbl?.frame = CGRect(x: (screenSize.width / 2) - 120, y: 175, width: 240, height: 40)
+        progressLbl?.font = UIFont(name: "Avenir Next", size: 18)
+        progressLbl?.textColor = #colorLiteral(red: 0.4078193307, green: 0.4078193307, blue: 0.4078193307, alpha: 1)
+        progressLbl?.textAlignment = .center
+       // progressLbl?.text = "Always 12"
+
+        collectionView?.addSubview(progressLbl!)
+    }
+    
+    func removeProgressLbl() {
+        if progressLbl != nil {
+            progressLbl?.removeFromSuperview()
+        }
     }
 
     @IBAction func centerMapButtonWasPressed(_ sender: Any) {
@@ -124,12 +166,17 @@ extension MapVC: MKMapViewDelegate {
     
     @objc func dropPin(sender: UITapGestureRecognizer) {
         removePin()
-        
+        removeProgressLbl()
+        removeSpinner()
+
         animateViewUp()
         //adds the ability to swipe once there is a pin dropped
         addSwipe()
         
         addSpinner()
+        
+        
+        addProgressLbl()
         
         //print("doubleTap is working")
         
@@ -179,3 +226,20 @@ extension MapVC: CLLocationManagerDelegate {
     
 }
 
+
+
+extension MapVC: UICollectionViewDelegate, UICollectionViewDataSource {
+    func numberOfSections(in collectionView: UICollectionView) -> Int {
+        return 1
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return 4
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier:  "photoCell", for: indexPath) as? PhotoCell
+        
+        return cell!
+    }
+}
