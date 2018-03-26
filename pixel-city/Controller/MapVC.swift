@@ -42,6 +42,7 @@ class MapVC: UIViewController, UIGestureRecognizerDelegate {
     var flowLayout = UICollectionViewFlowLayout()
     var collectionView: UICollectionView?
     var imageURLArray = [String]()
+    var imageArray = [UIImage]()
     
     //Constants
     let authorizationStatus = CLLocationManager.authorizationStatus()
@@ -66,7 +67,7 @@ class MapVC: UIViewController, UIGestureRecognizerDelegate {
         collectionView?.dataSource = self
         
         //checks if it actually comes up
-        collectionView?.backgroundColor = #colorLiteral(red: 0.1960784346, green: 0.3411764801, blue: 0.1019607857, alpha: 1)
+        collectionView?.backgroundColor = #colorLiteral(red: 0.721568644, green: 0.8862745166, blue: 0.5921568871, alpha: 1)
         
         pullUpView.addSubview(collectionView!)
     }
@@ -101,6 +102,8 @@ class MapVC: UIViewController, UIGestureRecognizerDelegate {
     
     //action for UISwipeGestureRecognizer in func animateViewUp()
     @objc func animateViewDown() {
+        cancelAllSessions()
+        
         pullUpViewHeightConstraint.constant = 0
         
         UIView.animate(withDuration: 0.3) {
@@ -127,7 +130,7 @@ class MapVC: UIViewController, UIGestureRecognizerDelegate {
     func addProgressLbl() {
         progressLbl = UILabel()
         progressLbl?.frame = CGRect(x: (screenSize.width / 2) - 120, y: 175, width: 240, height: 40)
-        progressLbl?.font = UIFont(name: "Avenir Next", size: 18)
+        progressLbl?.font = UIFont(name: "Avenir Next", size: 14)
         progressLbl?.textColor = #colorLiteral(red: 0.4078193307, green: 0.4078193307, blue: 0.4078193307, alpha: 1)
         progressLbl?.textAlignment = .center
        // progressLbl?.text = "Always 12"
@@ -176,6 +179,7 @@ extension MapVC: MKMapViewDelegate {
         removePin()
         removeProgressLbl()
         removeSpinner()
+        cancelAllSessions()
 
         animateViewUp()
         //adds the ability to swipe once there is a pin dropped
@@ -208,8 +212,18 @@ extension MapVC: MKMapViewDelegate {
         
         mapView.setRegion(coordinateRegion, animated: true)
         
-        retrieveUrls(forAnnotation: annotation) { (true) in
-            print(self.imageURLArray)
+        //giving unique return value instead of true (finished)
+        retrieveUrls(forAnnotation: annotation) { (finished) in
+            //print(self.imageURLArray)
+            if finished {
+                self.retrieveImages(handler: { (finished) in
+                    //Now we should 1)Hide spinner 2)Hide Progress label 3)Reload collection view
+                    self.removeSpinner()
+                    self.removeProgressLbl()
+                    
+                    
+                })
+            }
         }
     }
     
@@ -238,6 +252,35 @@ extension MapVC: MKMapViewDelegate {
             }
             handler(true)
             
+        }
+    }
+    
+    func retrieveImages(handler: @escaping handler) {
+        imageArray = []
+        for url in imageURLArray {
+            Alamofire.request(url).responseImage(completionHandler: { (response) in
+                guard let image = response.result.value else { return }
+                self.imageArray.append(image)
+                self.progressLbl?.text = "\(self.imageArray.count)/40 IMAGES DOWNLOADED"
+                
+                //check if amount of images add upt to amount of URLS
+                if self.imageArray.count == self.imageURLArray.count {
+                    handler(true)
+                }
+            })
+        }
+    }
+    
+    func cancelAllSessions() {
+        //SessionManageer is a singleton
+        //3 types of sessions/tasks that can be happening in the app. All are arrays
+        Alamofire.SessionManager.default.session.getTasksWithCompletionHandler { (sessionDataTask, uploadData, downloadData) in
+            //lets you cycle through the array like for loop. $0 creates placeholder
+            sessionDataTask.forEach({ $0.cancel() })
+            downloadData.forEach({ $0.cancel() })
+            uploadData.forEach({ $0.cancel() })
+
+            //call this function in animateViewDown
         }
     }
 }
