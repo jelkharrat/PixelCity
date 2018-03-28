@@ -67,7 +67,7 @@ class MapVC: UIViewController, UIGestureRecognizerDelegate {
         collectionView?.dataSource = self
         
         //checks if it actually comes up
-        collectionView?.backgroundColor = #colorLiteral(red: 0.721568644, green: 0.8862745166, blue: 0.5921568871, alpha: 1)
+        collectionView?.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
         
         pullUpView.addSubview(collectionView!)
     }
@@ -180,6 +180,12 @@ extension MapVC: MKMapViewDelegate {
         removeProgressLbl()
         removeSpinner()
         cancelAllSessions()
+        
+        //setting arrays to empty
+        imageURLArray = []
+        imageArray = []
+        
+        collectionView?.reloadData()
 
         animateViewUp()
         //adds the ability to swipe once there is a pin dropped
@@ -220,8 +226,8 @@ extension MapVC: MKMapViewDelegate {
                     //Now we should 1)Hide spinner 2)Hide Progress label 3)Reload collection view
                     self.removeSpinner()
                     self.removeProgressLbl()
-                    
-                    
+                    //reloading images to be displayed
+                    self.collectionView?.reloadData()
                 })
             }
         }
@@ -236,8 +242,6 @@ extension MapVC: MKMapViewDelegate {
     
     //have a handler that way it can communitcate with the function retrieveImages() so that it will activate
     func retrieveUrls(forAnnotation annotation: DroppablePin, handler: @escaping handler) {
-        //want to clear out any existing URLs already populating the array
-        imageURLArray = []
         Alamofire.request(flickrURL(forApiKey: apiKey, withAnnotation: annotation, andNumberOfPhotos: 40)).responseJSON { (response) in
             //first level of JSON
             guard let json = response.result.value as? Dictionary<String,AnyObject> else { return }
@@ -256,7 +260,6 @@ extension MapVC: MKMapViewDelegate {
     }
     
     func retrieveImages(handler: @escaping handler) {
-        imageArray = []
         for url in imageURLArray {
             Alamofire.request(url).responseImage(completionHandler: { (response) in
                 guard let image = response.result.value else { return }
@@ -311,12 +314,19 @@ extension MapVC: UICollectionViewDelegate, UICollectionViewDataSource {
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return 4
+        return imageArray.count
     }
     
+    //cellForItemAt is kinda like a for loop. Thats why we have access to indexPath
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier:  "photoCell", for: indexPath) as? PhotoCell
+        //if it doesn't return a cell w an image it will return an empty cell
+        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier:  "photoCell", for: indexPath) as? PhotoCell else { return UICollectionViewCell() }
+        let imageFromIndex = imageArray[indexPath.row]
         
-        return cell!
+        let imageView = UIImageView(image: imageFromIndex)
+        cell.addSubview(imageView)
+        //reloading collection view to get images in the dropPin Function
+        
+        return cell
     }
 }
