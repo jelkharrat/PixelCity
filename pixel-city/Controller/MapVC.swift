@@ -70,6 +70,9 @@ class MapVC: UIViewController, UIGestureRecognizerDelegate {
         collectionView?.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
         
         pullUpView.addSubview(collectionView!)
+        
+        //tells where to get source rect for preview
+        registerForPreviewing(with: self, sourceView: collectionView!)
     }
     
     func addDoubleTap() {
@@ -345,3 +348,35 @@ extension MapVC: UICollectionViewDelegate, UICollectionViewDataSource {
     
     
 }
+
+
+//creating another extension of mapVC so that we can conform to UIviewcontroller preview delegate
+
+extension MapVC: UIViewControllerPreviewingDelegate {
+    func previewingContext(_ previewingContext: UIViewControllerPreviewing, viewControllerForLocation location: CGPoint) -> UIViewController? {
+        //making a constant to know where were pushing from, and a cell from the path so we can access the image from that cell
+        guard let indexPath = collectionView?.indexPathForItem(at: location), let cell = collectionView?.cellForItem(at: indexPath) else { return nil }
+        
+        guard let popVC = storyboard?.instantiateViewController(withIdentifier: "PopVC") as? PopVC else { return nil }
+        
+        popVC.initData(forImage: imageArray[indexPath.row])
+        
+        //small version of the screen. Responds to forceful touch
+        previewingContext.sourceRect = cell.contentView.frame
+        
+        return popVC
+    }
+    
+    func previewingContext(_ previewingContext: UIViewControllerPreviewing, commit viewControllerToCommit: UIViewController) {
+        show(viewControllerToCommit, sender: self)
+    }
+}
+
+
+
+
+
+
+
+
+
